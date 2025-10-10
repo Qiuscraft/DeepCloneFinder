@@ -2,6 +2,14 @@
 
 一个代码克隆检测工具。致力于利用LLM的能力寻找出Type-4克隆。
 
+## 依赖安装
+
+Python 版本：3.12
+
+```
+pip install -r requirements.txt
+```
+
 ## 数据集下载
 
 链接：https://1drv.ms/u/s!AhXbM6MKt_yLj_N15CewgjM7Y8NLKA?e=cScoRJ
