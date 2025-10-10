@@ -1,6 +1,6 @@
 from dataclasses import dataclass
+
 import javalang
-import os
 
 
 @dataclass
