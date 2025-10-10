@@ -131,16 +131,3 @@ def extract_functions_from_file(file_path: str) -> list[FunctionInfo]:
     parser = JavaParser(file_path)
     return parser.extract_functions()
 
-
-if __name__ == '__main__':
-    # 构建到测试文件的绝对路径以确保可移植性
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    test_file_name = os.path.join(script_dir, "test", "function_extract.java")
-
-    print(f"--- Running test on {test_file_name} ---")
-    extracted_functions = extract_functions_from_file(test_file_name)
-    for func_info in extracted_functions:
-        print(f"Function found from line {func_info.start_line} to {func_info.end_line}")
-        print("--- Code ---")
-        print(func_info.code_snippet)
-        print("--------------\n")
