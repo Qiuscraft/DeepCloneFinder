@@ -4,7 +4,9 @@ import os
 from tqdm import tqdm
 
 from config import dataset_path
-from function_extract import extract_functions_from_file
+from function_extract import extract_functions_from_file, FunctionInfo
+from file_io import write_functions_to_disk
+from typing import List
 
 
 def get_all_java_files(directory: str) -> list[str]:
@@ -24,19 +26,18 @@ def get_all_java_files(directory: str) -> list[str]:
     return java_files
 
 
-def process_file(java_file: str) -> int:
+def process_file(java_file: str) -> List[FunctionInfo]:
     """
-    处理单个Java文件，提取函数并返回数量。
-    这是一个用于多线程的工作函数。
+    处理单个Java文件，提取函数并返回函数信息列表。
+    这是一个用于多进程的工作函数。
     """
     try:
-        functions = extract_functions_from_file(java_file)
-        return len(functions)
+        return extract_functions_from_file(java_file)
     except Exception as e:
         # 在多线程中打印需要小心，但对于错误报告是可接受的。
         # 加一个换行符以避免与tqdm进度条混淆。
         print(f"\n处理文件 '{java_file}' 时发生错误: {e}")
-        return 0  # 返回0表示此文件没有成功提取函数
+        return []  # 返回空列表表示此文件没有成功提取函数
 
 
 def main():
@@ -52,7 +53,7 @@ def main():
         return
 
     print("开始从所有.java文件中多进程提取函数...")
-    results = []
+    all_functions: List[FunctionInfo] = []
     # 使用ProcessPoolExecutor进行多进程处理
     with concurrent.futures.ProcessPoolExecutor() as executor:
         # 提交所有任务
@@ -60,13 +61,19 @@ def main():
         # 使用tqdm显示进度
         for future in tqdm(concurrent.futures.as_completed(future_to_file), total=len(java_files), desc="提取进度"):
             try:
-                result = future.result()
-                results.append(result)
+                functions_list = future.result()
+                if functions_list:
+                    all_functions.extend(functions_list)
             except Exception as exc:
                 java_file = future_to_file[future]
                 print(f"\n处理文件 '{java_file}' 时生成异常: {exc}")
 
-    total_functions_count = sum(results)
+    output_file = "functions.pkl"
+    print(f"\n开始将提取的函数写入到 '{output_file}'...")
+    write_functions_to_disk(all_functions, output_file)
+    print("写入完成！")
+
+    total_functions_count = len(all_functions)
 
     print("\n提取完成！")
     print(f"在 {len(java_files)} 个.java文件中，总共提取了 {total_functions_count} 个函数。")
