@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 
 import javalang
@@ -13,6 +14,8 @@ class FunctionInfo:
     start_line: int
     end_line: int
     code_snippet: str
+    subdirectory: str
+    filename: str
 
 
 class JavaParser:
@@ -27,6 +30,8 @@ class JavaParser:
         :param file_path: Java文件的路径。
         """
         self.file_path = file_path
+        self.filename = os.path.basename(file_path)
+        self.subdirectory = os.path.basename(os.path.dirname(file_path))
         self.source_code = self._read_source_code()
         self.lines = self.source_code.splitlines(True)
         self.tokens = list(javalang.tokenizer.tokenize(self.source_code))
@@ -111,7 +116,9 @@ class JavaParser:
                 functions.append(FunctionInfo(
                     start_line=start_line,
                     end_line=end_line,
-                    code_snippet=code_snippet
+                    code_snippet=code_snippet,
+                    subdirectory=self.subdirectory,
+                    filename=self.filename
                 ))
         return functions
 

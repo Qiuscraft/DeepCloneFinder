@@ -1,5 +1,6 @@
 import concurrent.futures
 import os
+import random
 
 from tqdm import tqdm
 
@@ -73,6 +74,18 @@ def main():
     logger.info(f"开始将提取的函数写入到 '{output_file}'...")
     write_functions_to_disk(all_functions, output_file)
     logger.info("写入完成！")
+
+    if all_functions:
+        logger.info("随机挑选3个函数进行展示:")
+        num_to_display = min(3, len(all_functions))
+        selected_functions = random.sample(all_functions, num_to_display)
+        for i, func in enumerate(selected_functions):
+            logger.info(f"--- 函数 {i + 1}/{num_to_display} ---")
+            logger.info(f"  父文件夹: {func.subdirectory}")
+            logger.info(f"  文件名: {func.filename}")
+            logger.info(f"  行数: {func.start_line}-{func.end_line}")
+            logger.info(f"  代码:\n{func.code_snippet}")
+            logger.info("-" * (len(f"--- 函数 {i + 1}/{num_to_display} ---")))
 
     total_functions_count = len(all_functions)
 
