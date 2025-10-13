@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from logging.handlers import RotatingFileHandler
 
 def setup_logger(log_dir='logs', log_file='app.log'):
@@ -34,5 +35,5 @@ def setup_logger(log_dir='logs', log_file='app.log'):
 
     return logger
 
-logger = setup_logger()
+logger = setup_logger('logs', f"app_{time.strftime('%Y%m%d_%H%M%S')}.log")
 
