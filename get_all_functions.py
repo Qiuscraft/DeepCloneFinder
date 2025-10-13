@@ -7,6 +7,7 @@ from config import dataset_path
 from utils.function_extract import extract_functions_from_file, FunctionInfo
 from utils.file_io import write_functions_to_disk
 from typing import List
+from utils.logger import logger
 
 
 def get_all_java_files(directory: str) -> list[str]:
@@ -17,12 +18,12 @@ def get_all_java_files(directory: str) -> list[str]:
     :return: 一个包含所有.java文件绝对路径的列表。
     """
     java_files = []
-    print(f"正在从 '{directory}' 目录中搜寻.java文件...")
+    logger.info(f"正在从 '{directory}' 目录中搜寻.java文件...")
     for root, _, files in os.walk(directory):
         for file in files:
             if file.endswith(".java"):
                 java_files.append(os.path.join(root, file))
-    print(f"搜寻完成，共找到 {len(java_files)} 个.java文件。")
+    logger.info(f"搜寻完成，共找到 {len(java_files)} 个.java文件。")
     return java_files
 
 
@@ -36,7 +37,7 @@ def process_file(java_file: str) -> List[FunctionInfo]:
     except Exception as e:
         # 在多线程中打印需要小心，但对于错误报告是可接受的。
         # 加一个换行符以避免与tqdm进度条混淆。
-        print(f"\n处理文件 '{java_file}' 时发生错误: {e}")
+        logger.error(f"处理文件 '{java_file}' 时发生错误 {e.__class__}: {e}")
         return []  # 返回空列表表示此文件没有成功提取函数
 
 
@@ -45,14 +46,14 @@ def main():
     主函数，执行遍历、提取和计数操作。
     """
     if not os.path.isdir(dataset_path):
-        print(f"Error: 在 'config.py' 中配置的数据集路径 '{dataset_path}' 不是一个有效的目录。")
+        logger.error(f"Error: 在 'config.py' 中配置的数据集路径 '{dataset_path}' 不是一个有效的目录。")
         return
 
     java_files = get_all_java_files(dataset_path)
     if not java_files:
         return
 
-    print("开始从所有.java文件中多进程提取函数...")
+    logger.info("开始从所有.java文件中多进程提取函数...")
     all_functions: List[FunctionInfo] = []
     # 使用ProcessPoolExecutor进行多进程处理
     with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -66,17 +67,17 @@ def main():
                     all_functions.extend(functions_list)
             except Exception as exc:
                 java_file = future_to_file[future]
-                print(f"\n处理文件 '{java_file}' 时生成异常: {exc}")
+                logger.error(f"处理文件 '{java_file}' 时生成异常: {exc}")
 
     output_file = "functions.pkl"
-    print(f"\n开始将提取的函数写入到 '{output_file}'...")
+    logger.info(f"开始将提取的函数写入到 '{output_file}'...")
     write_functions_to_disk(all_functions, output_file)
-    print("写入完成！")
+    logger.info("写入完成！")
 
     total_functions_count = len(all_functions)
 
-    print("\n提取完成！")
-    print(f"在 {len(java_files)} 个.java文件中，总共提取了 {total_functions_count} 个函数。")
+    logger.info("提取完成！")
+    logger.info(f"在 {len(java_files)} 个.java文件中，总共提取了 {total_functions_count} 个函数。")
 
 
 if __name__ == "__main__":
