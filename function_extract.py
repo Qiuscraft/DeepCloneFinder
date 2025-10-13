@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 
+import chardet
 import javalang
+
+from utils.detect_encoding import detect_encoding
 
 
 @dataclass
@@ -34,7 +37,7 @@ class JavaParser:
         """
         读取源文件内容。
         """
-        with open(self.file_path, 'r', encoding='utf-8') as f:
+        with open(self.file_path, 'r', encoding=detect_encoding(self.file_path)) as f:
             return f.read()
 
     def _parse_source_code(self):
@@ -130,4 +133,3 @@ def extract_functions_from_file(file_path: str) -> list[FunctionInfo]:
     """
     parser = JavaParser(file_path)
     return parser.extract_functions()
-
