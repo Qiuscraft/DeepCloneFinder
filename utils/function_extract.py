@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-import chardet
 import javalang
 
 from utils.detect_encoding import detect_encoding
@@ -44,14 +43,7 @@ class JavaParser:
         """
         使用javalang解析源代码。
         """
-        try:
-            return javalang.parse.parse(self.source_code)
-        except javalang.tokenizer.LexerError as e:
-            print(f"Error lexing file {self.file_path}: {e}")
-            return None
-        except javalang.parser.JavaSyntaxError as e:
-            print(f"Error parsing file {self.file_path}: {e}")
-            return None
+        return javalang.parse.parse(self.source_code)
 
     def _get_node_end_line(self, node) -> int:
         """
