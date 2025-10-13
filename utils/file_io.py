@@ -1,6 +1,6 @@
 import pickle
 from typing import List
-from function_extract import FunctionInfo
+from utils.function_extract import FunctionInfo
 
 def write_functions_to_disk(functions: List[FunctionInfo], file_path: str):
     """
