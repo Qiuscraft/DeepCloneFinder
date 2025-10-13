@@ -4,7 +4,7 @@ import sys
 # 将项目根目录添加到Python路径中，以解决模块导入问题
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from function_extract import extract_functions_from_file
+from utils.function_extract import extract_functions_from_file
 
 # 获取当前脚本所在的目录
 # 这使得测试可以在任何工作目录下运行

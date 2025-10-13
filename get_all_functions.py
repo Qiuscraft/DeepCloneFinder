@@ -4,8 +4,8 @@ import os
 from tqdm import tqdm
 
 from config import dataset_path
-from function_extract import extract_functions_from_file, FunctionInfo
-from file_io import write_functions_to_disk
+from utils.function_extract import extract_functions_from_file, FunctionInfo
+from utils.file_io import write_functions_to_disk
 from typing import List
 
 
