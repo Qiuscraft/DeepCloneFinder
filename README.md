@@ -31,3 +31,20 @@ pip install -r requirements.txt
 ```
 pytest
 ```
+
+## 项目结构
+
+```
+.
+├── config.py               # 配置文件，用于设置数据集的路径
+├── get_all_functions.py    # 可执行脚本，提取所有java函数
+├── test/                   # 测试代码目录
+│   ├── function_extract.java # 用于测试的Java示例文件
+│   └── test_function_extract.py # function_extract.py的自动化测试脚本
+└── utils/                  # 工具脚本目录
+    ├── detect_encoding.py    # 检测文件编码格式的工具
+    ├── file_io.py            # 负责把FunctionInfo保存到磁盘上/从磁盘上加载进内存中。从而避免重复计算，加速效率。
+    ├── function_extract.py   # 核心功能，从java文件提取函数，定义了FunctionInfo
+    ├── line_counter.py       # 可执行脚本。统计.java文件代码行数
+    └── logger.py             # 配置和初始化日志记录器
+```
