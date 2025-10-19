@@ -2,3 +2,4 @@
 functions.pkl
 logs
 data
+*.py[cod]
