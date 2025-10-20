@@ -4,7 +4,7 @@ import csv
 import os
 from typing import Optional
 
-from clone.filter_strategy import AllowAllClonePairFilter, ClonePairFilterStrategy
+from clone.pair_filter_strategy import AllowAllClonePairFilter, ClonePairFilterStrategy
 
 
 class CloneClassParser:
