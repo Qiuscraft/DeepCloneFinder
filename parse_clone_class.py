@@ -1,7 +1,7 @@
 import random
 import time
 
-from clone.parse_clone_class import CloneClassParser
+from clone.clone_class_parser import CloneClassParser
 
 
 if __name__ == "__main__":

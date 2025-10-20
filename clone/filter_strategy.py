@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 from typing import Callable, Iterable, List
 
-from clone_pair import ClonePair
+from .clone_pair import ClonePair
 
 
 class CombinationOperator(Enum):

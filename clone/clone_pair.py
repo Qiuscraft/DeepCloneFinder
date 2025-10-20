@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from model.clone_type import CloneType
+from .clone_type import CloneType
 
 
 @dataclass
