@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 import javalang
 
-from utils.detect_encoding import detect_encoding
+from utils.file.detect_encoding import detect_encoding
 
 
 @dataclass

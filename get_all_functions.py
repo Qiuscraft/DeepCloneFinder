@@ -6,9 +6,9 @@ from tqdm import tqdm
 
 from config import dataset_path
 from utils.java_code.function_extract import extract_functions_from_file, FunctionInfo
-from utils.file_io import write_functions_to_disk
+from utils.file.file_io import write_functions_to_disk
 from typing import List
-from utils.logger import logger
+from utils.logger.logger import logger
 
 
 def get_all_java_files(directory: str) -> list[str]:
