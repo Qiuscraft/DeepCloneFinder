@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Dict, Tuple
 
 from utils.file_io import read_functions_from_disk
-from utils.function_extract import FunctionInfo
+from utils.java_code.function_extract import FunctionInfo
 from clone.clone_class_parser import parse_clone_classes_from_csv
 from clone.clone_class import CloneClass
 from clone.clone_pair import ClonePair

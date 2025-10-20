@@ -5,7 +5,7 @@ import random
 from tqdm import tqdm
 
 from config import dataset_path
-from utils.function_extract import extract_functions_from_file, FunctionInfo
+from utils.java_code.function_extract import extract_functions_from_file, FunctionInfo
 from utils.file_io import write_functions_to_disk
 from typing import List
 from utils.logger import logger
