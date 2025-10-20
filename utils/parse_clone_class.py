@@ -2,6 +2,8 @@ from model.clone_class import CloneClass
 from model.clone_pair import ClonePair
 import csv
 import os
+import random
+import time
 
 
 class CloneClassParser:
@@ -99,10 +101,21 @@ def parse_clone_classes_from_csv(filepath, encoding):
 
 
 if __name__ == "__main__":
-    parser = CloneClassParser("test/test.csv")
+    now = time.time()
+    parser = CloneClassParser("data/msccd_default.csv")
     clone_classes = parser.parse()
-    for idx, clone_class in enumerate(clone_classes):
-        print(f"Clone Class {idx + 1}:")
-        for pair in clone_class.clone_pairs:
-            print(f"{pair}")
-        print(f"{clone_class.clone_type}")
+    print("Total Clone Classes:", len(clone_classes))
+    print("Total Clone Pairs:", sum(len(cc.clone_pairs) for cc in clone_classes))
+    print("Parsing Time:", time.time() - now)
+    print("Random Sample Clone Class:")
+    if not clone_classes:
+        print("  No clone classes found.")
+    else:
+        sample = random.choice(clone_classes)
+        print(f"  Total Pairs: {len(sample.clone_pairs)}")
+        for idx, pair in enumerate(sample.clone_pairs, start=1):
+            print(
+                f"  Pair {idx}: {pair.file1}:{pair.start1}-{pair.end1} <-> "
+                f"{pair.file2}:{pair.start2}-{pair.end2}"
+            )
+    
