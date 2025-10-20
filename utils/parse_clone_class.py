@@ -2,8 +2,9 @@ from model.clone_class import CloneClass
 from model.clone_pair import ClonePair
 import csv
 import os
-import random
-import time
+from typing import Optional
+
+from utils.filter_strategy import AllowAllClonePairFilter, ClonePairFilterStrategy
 
 
 class CloneClassParser:
@@ -85,37 +86,24 @@ class CloneClassParser:
             clone_classes.append(CloneClass(clone_pairs=pairs))
         return clone_classes
 
-    def parse(self):
+    def parse(
+        self, filter_strategy: Optional[ClonePairFilterStrategy] = None
+    ):
+        """解析克隆对并根据可选过滤策略汇聚成克隆类。"""
         fields_list = self._read_csv()
         clone_pairs = []
         for fields in fields_list:
             pair = self._parse_clone_pair(fields)
             clone_pairs.append(pair)
+        active_filter = filter_strategy or AllowAllClonePairFilter()
+        clone_pairs = [pair for pair in clone_pairs if active_filter.match(pair)]
         clone_classes = self._parse_clone_class(clone_pairs)
         return clone_classes
 
 
-def parse_clone_classes_from_csv(filepath, encoding):
+def parse_clone_classes_from_csv(
+    filepath, encoding, filter_strategy: Optional[ClonePairFilterStrategy] = None
+):
     parser = CloneClassParser(filepath, encoding)
-    return parser.parse()
+    return parser.parse(filter_strategy=filter_strategy)
 
-
-if __name__ == "__main__":
-    now = time.time()
-    parser = CloneClassParser("data/msccd_default.csv")
-    clone_classes = parser.parse()
-    print("Total Clone Classes:", len(clone_classes))
-    print("Total Clone Pairs:", sum(len(cc.clone_pairs) for cc in clone_classes))
-    print("Parsing Time:", time.time() - now)
-    print("Random Sample Clone Class:")
-    if not clone_classes:
-        print("  No clone classes found.")
-    else:
-        sample = random.choice(clone_classes)
-        print(f"  Total Pairs: {len(sample.clone_pairs)}")
-        for idx, pair in enumerate(sample.clone_pairs, start=1):
-            print(
-                f"  Pair {idx}: {pair.file1}:{pair.start1}-{pair.end1} <-> "
-                f"{pair.file2}:{pair.start2}-{pair.end2}"
-            )
-    
