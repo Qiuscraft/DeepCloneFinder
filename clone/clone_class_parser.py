@@ -1,5 +1,5 @@
-from clone.clone_class import CloneClass
-from clone.clone_pair import ClonePair
+from .clone_class import CloneClass
+from .clone_pair import ClonePair
 import csv
 import os
 from typing import Optional
