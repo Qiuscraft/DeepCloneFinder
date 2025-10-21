@@ -18,21 +18,27 @@ if __name__ == "__main__":
     print('========== Loading File Cache ==========')
     file_cache = FileCache(config.dataset_path, show_progress=True, use_multiprocessing=mp, workers=workers, disk_cache=True)
     
-    print("File Cache Creation Time:", time.time() - now, "s")
+    print("File Cache Loading Time:", time.time() - now, "s")
     now = time.time()
     
-    print('========== Parsing Clone Classes ==========')
+    print('========== Reading Clone Pairs ==========')
+
+    parser = CloneClassParser("data/msccd_default.csv")
+
+    print("Total Clone Pairs:", len(parser.clone_pairs))
+
+    print("Clone Pairs Reading Time:", time.time() - now, "s")
+    now = time.time()
+
+    '''
+    print('========== Filtering Clone Pairs ==========')
 
     filter_strategy = OnlyAllowJavaFunctionClonePairFilter(file_cache)
-    
-    parser = CloneClassParser("data/msccd_default.csv")
-    clone_classes = parser.parse()
 
-    print("Total Clone Classes:", len(clone_classes))
-    print("Total Clone Pairs:", sum(len(cc.clone_pairs) for cc in clone_classes))
-
-    print("Clone Class Parsing Time:", time.time() - now, "s")
+    print("Clone Pairs Filtering Time:", time.time() - now, "s")
     now = time.time()
+    '''
+    
     '''
     print('==========Extracting Functions from File Cache==========')
     

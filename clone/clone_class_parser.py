@@ -1,34 +1,8 @@
-from .clone_class import CloneClass
-from .clone_pair import ClonePair
 import csv
 import os
-import multiprocessing
-from concurrent.futures import ProcessPoolExecutor
-from typing import Optional
-from tqdm import tqdm
 
-from clone.pair_filter_strategy import AllowAllClonePairFilter, ClonePairFilterStrategy
-
-# 用于进程池的全局过滤器变量
-_process_global_filter = None
-
-
-def _process_initialize(filter_strategy):
-    """初始化进程池中的工作进程"""
-    global _process_global_filter
-    _process_global_filter = filter_strategy
-
-
-def _filter_pair_in_process(pair):
-    """在工作进程中执行的过滤函数，捕获并处理可能的异常"""
-    global _process_global_filter
-    try:
-        return pair if _process_global_filter.match(pair) else None
-    except Exception as e:
-        # 捕获所有可能的异常，尤其是文件不存在的异常
-        # 可以根据需要添加日志记录
-        # print(f"Error filtering pair {pair.file1}:{pair.start1}-{pair.end1} <-> {pair.file2}:{pair.start2}-{pair.end2}: {e}")
-        return None
+from clone.clone_class import CloneClass
+from clone.clone_pair import ClonePair
 
 
 class CloneClassParser:
@@ -37,6 +11,12 @@ class CloneClassParser:
     def __init__(self, filepath, encoding="utf-8"):
         self.filepath = filepath
         self.encoding = encoding
+        self.clone_pairs = []
+
+        fields_list = self._read_csv()
+        for fields in fields_list:
+            pair = self._parse_clone_pair(fields)
+            self.clone_pairs.append(pair)
 
     def _read_csv(self):
         fields_list = []
@@ -109,76 +89,9 @@ class CloneClassParser:
         for pairs in group_map.values():
             clone_classes.append(CloneClass(clone_pairs=pairs))
         return clone_classes
+    
 
-    def parse(
-        self, filter_strategy: Optional[ClonePairFilterStrategy] = None,
-        show_progress: bool = True,
-        use_multiprocessing: bool = False,
-        process_count: Optional[int] = None
-    ):
-        """解析克隆对并根据可选过滤策略汇聚成克隆类。
-
-        Args:
-            filter_strategy: 可选的过滤策略，默认为保留所有克隆对
-            show_progress: 是否显示进度条，默认为True
-            use_multiprocessing: 是否使用多进程筛选克隆对，默认为False
-            process_count: 多进程数量，默认为CPU核心数的一半
-        """
-        fields_list = self._read_csv()
-        clone_pairs = []
-        items = tqdm(fields_list, desc="解析克隆对", unit="对") if show_progress else fields_list
-        for fields in items:
-            pair = self._parse_clone_pair(fields)
-            clone_pairs.append(pair)
-        
-        active_filter = filter_strategy or AllowAllClonePairFilter()
-        filtered_pairs = []
-        
-        # 根据是否开启多进程选择不同的筛选方式
-        if use_multiprocessing:
-            # 如果未指定进程数，使用CPU核心数的一半
-            if process_count is None:
-                process_count = max(1, multiprocessing.cpu_count() // 2)
-            
-            # 使用ProcessPoolExecutor的initializer参数来初始化工作进程
-            # 这样可以避免在进程间传递包含不可序列化内容的filter_strategy
-            with ProcessPoolExecutor(max_workers=process_count, initializer=_process_initialize, initargs=(active_filter,)) as executor:
-                if show_progress:
-                    # 使用tqdm显示进度
-                    filtered_results = list(
-                        tqdm(
-                            executor.map(_filter_pair_in_process, clone_pairs),
-                            total=len(clone_pairs),
-                            desc="筛选克隆对",
-                            unit="对"
-                        )
-                    )
-                else:
-                    filtered_results = list(executor.map(_filter_pair_in_process, clone_pairs))
-                
-                # 过滤掉None值
-                filtered_pairs = [pair for pair in filtered_results if pair is not None]
-        else:
-            # 保持原有逻辑
-            items = tqdm(clone_pairs, desc="筛选克隆对", unit="对") if show_progress else clone_pairs
-            for pair in items:
-                if active_filter.match(pair):
-                    filtered_pairs.append(pair)
-        
-        clone_classes = self._parse_clone_class(filtered_pairs)
+    def parse(self):
+        clone_classes = self._parse_clone_class(self.clone_pairs)
         return clone_classes
 
-
-def parse_clone_classes_from_csv(
-    filepath, encoding, filter_strategy: Optional[ClonePairFilterStrategy] = None,
-    show_progress: bool = True,
-    use_multiprocessing: bool = False,
-    process_count: Optional[int] = None
-):
-    parser = CloneClassParser(filepath, encoding)
-    return parser.parse(
-        filter_strategy=filter_strategy, 
-        show_progress=show_progress,
-        use_multiprocessing=use_multiprocessing,
-        process_count=process_count
-    )
