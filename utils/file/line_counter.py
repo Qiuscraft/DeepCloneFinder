@@ -1,11 +1,12 @@
 import os
 import sys
 
+from utils.file.detect_encoding import detect_encoding
+
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import dataset_path
-from utils.detect_encoding import detect_encoding
 from tqdm import tqdm
 from multiprocessing import Pool, cpu_count
 

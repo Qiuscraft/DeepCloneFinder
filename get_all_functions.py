@@ -5,9 +5,11 @@ import random
 from tqdm import tqdm
 
 from config import dataset_path
-from utils.java_code.function_extract import extract_functions_from_file, FunctionInfo
 from utils.file.file_io import write_functions_to_disk
-from typing import List
+from utils.file.line_counter import count_lines_in_file
+from typing import List, Dict, Tuple
+from utils.java_code.function_info import FunctionInfo
+from utils.java_code.java_parser import JavaParser
 from utils.logger.logger import logger
 
 
@@ -34,7 +36,8 @@ def process_file(java_file: str) -> List[FunctionInfo]:
     这是一个用于多进程的工作函数。
     """
     try:
-        return extract_functions_from_file(java_file)
+        parser = JavaParser(java_file)
+        return parser.extract_functions()
     except Exception as e:
         # 在多线程中打印需要小心，但对于错误报告是可接受的。
         # 加一个换行符以避免与tqdm进度条混淆。
@@ -53,6 +56,34 @@ def main():
     java_files = get_all_java_files(dataset_path)
     if not java_files:
         return
+
+    # 计算所有文件的总行数
+    logger.info("开始计算所有.java文件的代码行数...")
+    total_lines = 0
+    file_line_count: Dict[str, int] = {}
+    
+    # 使用多进程计算文件行数
+    with concurrent.futures.ProcessPoolExecutor() as line_counter_executor:
+        line_futures = {
+            line_counter_executor.submit(count_lines_in_file, java_file): java_file 
+            for java_file in java_files
+        }
+        
+        for future in tqdm(
+            concurrent.futures.as_completed(line_futures),
+            total=len(java_files), 
+            desc="计算行数进度"
+        ):
+            java_file = line_futures[future]
+            try:
+                lines = future.result()
+                file_line_count[java_file] = lines
+                total_lines += lines
+            except Exception as exc:
+                logger.error(f"计算文件 '{java_file}' 行数时发生异常: {exc}")
+                file_line_count[java_file] = 0
+
+    logger.info(f"所有.java文件的总行数: {total_lines}")
 
     logger.info("开始从所有.java文件中多进程提取函数...")
     all_functions: List[FunctionInfo] = []
@@ -80,17 +111,13 @@ def main():
         num_to_display = min(3, len(all_functions))
         selected_functions = random.sample(all_functions, num_to_display)
         for i, func in enumerate(selected_functions):
-            logger.info(f"--- 函数 {i + 1}/{num_to_display} ---")
-            logger.info(f"  父文件夹: {func.subdirectory}")
-            logger.info(f"  文件名: {func.filename}")
-            logger.info(f"  行数: {func.start_line}-{func.end_line}")
-            logger.info(f"  代码:\n{func.code_snippet}")
-            logger.info("-" * (len(f"--- 函数 {i + 1}/{num_to_display} ---")))
+            logger.info(f"--- 函数 {i + 1}/{num_to_display} ---\n  父文件夹: {func.subdirectory}\n  文件名: {func.filename}\n  行数: {func.start_line}-{func.end_line}\n  代码:\n{func.code_snippet}\n" + "-" * (len(f"--- 函数 {i + 1}/{num_to_display} ---")))
 
     total_functions_count = len(all_functions)
 
     logger.info("提取完成！")
     logger.info(f"在 {len(java_files)} 个.java文件中，总共提取了 {total_functions_count} 个函数。")
+    logger.info(f"所有.java文件的总行数: {total_lines}")
 
 
 if __name__ == "__main__":
