@@ -29,17 +29,12 @@ def _process_file(file_info, encoding='utf-8'):
 
 
 class FileCache:
-    def __init__(self, directory_path, show_progress=True, use_multiprocessing=False, workers=1, disk_cache=True):
+    def __init__(self, directory_path, show_progress=True, use_multiprocessing=False, workers=1):
         self.directory_path = directory_path
         self.manager = multiprocessing.Manager()
         self.cache = self.manager.dict()
         
-        if disk_cache:
-            if not self._init_from_disk_cache():
-                self._init_from_directory(show_progress, use_multiprocessing, workers)
-                self._save_to_disk_cache()
-        else:
-            self._init_from_directory(show_progress, use_multiprocessing, workers)
+        self._init_from_directory(show_progress, use_multiprocessing, workers)
 
     def _init_from_directory(self, show_progress: bool, use_multiprocessing: bool, workers: int):
         if not os.path.exists(self.directory_path):
@@ -139,32 +134,3 @@ class FileCache:
         # 返回缓存文件路径
         return os.path.join(cache_dir, f'{directory_hash}.pkl')
         
-    def _init_from_disk_cache(self):
-        """
-        从磁盘加载缓存，确保多进程环境下的正常共享
-        
-        :return: 加载成功返回True，否则返回False
-        """
-        try:
-            cache_file = self._get_cache_file_path()
-            if os.path.exists(cache_file):
-                with open(cache_file, 'rb') as f:
-                    cache_data = pickle.load(f)
-                    for key, value in cache_data.items():
-                        self.cache[key] = value
-                return True
-        except Exception as e:
-            print(f"Error loading cache from disk: {e}")
-        return False
-        
-    def _save_to_disk_cache(self):
-        """
-        保存缓存到磁盘
-        """
-        try:
-            cache_file = self._get_cache_file_path()
-            cache_data = dict(self.cache)
-            with open(cache_file, 'wb') as f:
-                pickle.dump(cache_data, f)
-        except Exception as e:
-            print(f"Error saving cache to disk: {e}")

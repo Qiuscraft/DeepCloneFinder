@@ -7,7 +7,7 @@ from utils.file.file_cache import FileCache
 from get_all_functions import extract_functions_from_file_cache
 from function.function_filter import FunctionFilter
 
-mp = config.use_multiprocessing
+use_multiprocessing = config.use_multiprocessing
 workers = config.workers
 
 
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     now = time.time()
     
     print('========== Loading File Cache ==========')
-    file_cache = FileCache(config.dataset_path, show_progress=True, use_multiprocessing=mp, workers=workers, disk_cache=True)
+    file_cache = FileCache(config.dataset_path, show_progress=True, use_multiprocessing=use_multiprocessing, workers=workers)
     
     print("File Cache Loading Time:", time.time() - now, "s")
     now = time.time()
