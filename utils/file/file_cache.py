@@ -33,9 +33,9 @@ class FileCache:
             # 使用检测到的编码打开文件
             with open(file_path, 'r', encoding=encoding) as f:
                 content = f.read()
-                # 使用相对于目录的路径作为键
-                rel_path = os.path.relpath(file_path, self.directory_path)
-                return rel_path, content
+                # 使用绝对路径作为键
+                abs_path = os.path.abspath(file_path)
+                return abs_path, content
         except Exception as e:
             # 处理可能的异常，例如文件权限问题、编码错误等
             print(f"Error loading file {file_path}: {e}")
