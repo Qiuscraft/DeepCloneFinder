@@ -1,1 +1,6 @@
+import os
+
+
 dataset_path = r'/root/bcb_reduced'
+multiprocessing = True
+max_workers = min(os.cpu_count() or 18, 18)
