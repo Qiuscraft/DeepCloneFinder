@@ -3,3 +3,4 @@ functions.pkl
 logs
 data
 *.py[cod]
+config.py
