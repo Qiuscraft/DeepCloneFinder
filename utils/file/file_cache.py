@@ -29,22 +29,19 @@ def _process_file(file_info, encoding='utf-8'):
 
 
 class FileCache:
-    def __init__(self, directory_path, show_progress=True, workers=None, disk_cache=True):
-        if not workers:
-            workers = (multiprocessing.cpu_count() // 2) or 1
-            
+    def __init__(self, directory_path, show_progress=True, use_multiprocessing=False, workers=1, disk_cache=True):
         self.directory_path = directory_path
         self.manager = multiprocessing.Manager()
         self.cache = self.manager.dict()
         
         if disk_cache:
             if not self._init_from_disk_cache():
-                self._init_from_directory(show_progress, workers)
+                self._init_from_directory(show_progress, use_multiprocessing, workers)
                 self._save_to_disk_cache()
         else:
-            self._init_from_directory(show_progress, workers)
+            self._init_from_directory(show_progress, use_multiprocessing, workers)
 
-    def _init_from_directory(self, show_progress: bool, workers: int):
+    def _init_from_directory(self, show_progress: bool, use_multiprocessing: bool, workers: int):
         if not os.path.exists(self.directory_path):
             raise FileNotFoundError(f"Directory not found: {self.directory_path}")
         
@@ -54,21 +51,29 @@ class FileCache:
             for file_name in files:
                 all_files.append((root, file_name))
         
-        # 创建进程池
-        with multiprocessing.Pool(processes=workers) as pool:
-            # 使用tqdm显示进度
-            if show_progress:
-                results = list(tqdm(
-                    pool.imap(_process_file, all_files),
-                    total=len(all_files),
-                    desc=f"Loading files with {workers} processes",
-                    unit="file"
-                ))
-            else:
-                results = pool.map(_process_file, all_files)
-            
-            # 处理结果
-            for result in results:
+        if use_multiprocessing:
+            # 创建进程池
+            with multiprocessing.Pool(processes=workers) as pool:
+                # 使用tqdm显示进度
+                if show_progress:
+                    results = list(tqdm(
+                        pool.imap(_process_file, all_files),
+                        total=len(all_files),
+                        desc=f"Loading files with {workers} processes",
+                        unit="file"
+                    ))
+                else:
+                    results = pool.map(_process_file, all_files)
+                
+                # 处理结果
+                for result in results:
+                    if result:
+                        rel_path, content = result
+                        self.cache[rel_path] = content
+        else:
+            # 单进程处理
+            for file_info in tqdm(all_files, desc="Loading files with 1 process", unit="file"):
+                result = _process_file(file_info)
                 if result:
                     rel_path, content = result
                     self.cache[rel_path] = content

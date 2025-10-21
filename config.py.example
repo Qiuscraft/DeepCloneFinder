@@ -1,6 +1,3 @@
-import os
-
-
-dataset_path = r'/root/bcb_reduced'
-multiprocessing = True
-max_workers = min(os.cpu_count() or 18, 18)
+dataset_path = r'/root/bcb_reduced' # 数据集路径
+use_multiprocessing = True # 是否开启多进程
+workers = 18 # 进程数
