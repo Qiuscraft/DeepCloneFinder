@@ -1,7 +1,5 @@
 import os
 import multiprocessing
-import pickle
-import hashlib
 from .detect_encoding import detect_encoding
 from tqdm import tqdm
 
@@ -96,41 +94,3 @@ class FileCache:
         """
         return file_path in self.cache
     
-    def _get_cache_file_path(self):
-        """
-        获取缓存文件的路径
-        
-        :return: 缓存文件的绝对路径
-        """
-        
-        # 计算目录路径和修改时间的组合哈希值
-        hash_input = str(os.path.getmtime(self.directory_path))
-        directory_hash = hashlib.md5(hash_input.encode()).hexdigest()
-        
-        # 构建缓存目录路径 - 自动检测当前运行文件所在目录作为项目根目录
-        import sys
-        
-        # 获取当前正在运行的主脚本路径
-        # sys.argv[0] 是当前执行的Python脚本的路径
-        if hasattr(sys, 'frozen'):  # 检查是否是打包后的可执行文件
-            # 如果是打包后的程序，获取可执行文件所在目录
-            main_script_path = os.path.dirname(os.path.abspath(sys.executable))
-        else:
-            # 正常Python脚本执行模式
-            main_script_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-            
-        # 将主脚本所在目录作为项目根目录
-        project_root = main_script_path
-        
-        # 也可以选择验证是否存在关键文件来确认这是项目根目录
-        # 例如检查是否存在 config.py 或者其他根目录下的标志性文件
-        # if not os.path.exists(os.path.join(project_root, 'config.py')):
-        #     # 如果找不到标志性文件，回退到基于当前文件位置的方法
-        #     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-        
-        cache_dir = os.path.join(project_root, 'cache', self.directory_path.strip('/').replace('/', '_'))
-        # 确保缓存目录存在
-        os.makedirs(cache_dir, exist_ok=True)
-        # 返回缓存文件路径
-        return os.path.join(cache_dir, f'{directory_hash}.pkl')
-        

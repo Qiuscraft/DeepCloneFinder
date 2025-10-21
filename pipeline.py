@@ -15,10 +15,10 @@ workers = config.workers
 if __name__ == "__main__":
     now = time.time()
     
-    print('========== Loading File Cache ==========')
+    print('========== Creating File Cache ==========')
     file_cache = FileCache(config.dataset_path, show_progress=True, use_multiprocessing=use_multiprocessing, workers=workers)
     
-    print("File Cache Loading Time:", time.time() - now, "s")
+    print("File Cache Creation Time:", time.time() - now, "s")
     now = time.time()
     
     print('========== Reading Clone Pairs ==========')
