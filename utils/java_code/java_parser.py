@@ -83,6 +83,7 @@ class JavaParser:
                         code_snippet=code_snippet,
                         subdirectory=self.subdirectory,
                         filename=self.filename,
+                        path=self.file_path,
                     )
                 )
         return functions

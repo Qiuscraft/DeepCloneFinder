@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 
 
@@ -10,3 +11,4 @@ class FunctionInfo:
     code_snippet: str
     subdirectory: str
     filename: str
+    path: str  # 绝对路径
