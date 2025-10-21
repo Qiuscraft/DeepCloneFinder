@@ -20,7 +20,11 @@ pip install -r requirements.txt
 
 下载后，解压到你喜欢的地方，不建议解压到项目目录，这会导致IDE开始编制索引。
 
-你需要在 `config.py` 中配置数据集路径。
+## 框架配置
+
+新建文件，命名为 `config.py`，并将 `config.py.example` 中的内容复制到 `config.py` 中。
+
+根据你的环境配置 `config.py`。
 
 ## 自动化测试
 
