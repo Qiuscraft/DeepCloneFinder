@@ -3,6 +3,7 @@ from .clone_pair import ClonePair
 import csv
 import os
 from typing import Optional
+from tqdm import tqdm
 
 from clone.pair_filter_strategy import AllowAllClonePairFilter, ClonePairFilterStrategy
 
@@ -87,12 +88,14 @@ class CloneClassParser:
         return clone_classes
 
     def parse(
-        self, filter_strategy: Optional[ClonePairFilterStrategy] = None
+        self, filter_strategy: Optional[ClonePairFilterStrategy] = None,
+        show_progress: bool = True
     ):
         """解析克隆对并根据可选过滤策略汇聚成克隆类。"""
         fields_list = self._read_csv()
         clone_pairs = []
-        for fields in fields_list:
+        items = tqdm(fields_list, desc="解析克隆对", unit="对") if show_progress else fields_list
+        for fields in items:
             pair = self._parse_clone_pair(fields)
             clone_pairs.append(pair)
         active_filter = filter_strategy or AllowAllClonePairFilter()
@@ -102,8 +105,8 @@ class CloneClassParser:
 
 
 def parse_clone_classes_from_csv(
-    filepath, encoding, filter_strategy: Optional[ClonePairFilterStrategy] = None
+    filepath, encoding, filter_strategy: Optional[ClonePairFilterStrategy] = None,
+    show_progress: bool = True
 ):
     parser = CloneClassParser(filepath, encoding)
-    return parser.parse(filter_strategy=filter_strategy)
-
+    return parser.parse(filter_strategy=filter_strategy, show_progress=show_progress)
