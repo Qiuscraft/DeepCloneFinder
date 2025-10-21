@@ -18,7 +18,7 @@ if __name__ == "__main__":
     filter_strategy = OnlyAllowJavaFunctionClonePairFilter(file_cache=file_cache)
     
     # 解析克隆类
-    clone_classes = parser.parse(filter_strategy=filter_strategy)
+    clone_classes = parser.parse(filter_strategy=filter_strategy, use_multiprocessing=True)
     print("Total Clone Classes:", len(clone_classes))
     print("Total Clone Pairs:", sum(len(cc.clone_pairs) for cc in clone_classes))
     print("Parsing Time:", time.time() - now)

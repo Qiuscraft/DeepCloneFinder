@@ -9,6 +9,27 @@ from tqdm import tqdm
 
 from clone.pair_filter_strategy import AllowAllClonePairFilter, ClonePairFilterStrategy
 
+# 用于进程池的全局过滤器变量
+_process_global_filter = None
+
+
+def _process_initialize(filter_strategy):
+    """初始化进程池中的工作进程"""
+    global _process_global_filter
+    _process_global_filter = filter_strategy
+
+
+def _filter_pair_in_process(pair):
+    """在工作进程中执行的过滤函数，捕获并处理可能的异常"""
+    global _process_global_filter
+    try:
+        return pair if _process_global_filter.match(pair) else None
+    except Exception as e:
+        # 捕获所有可能的异常，尤其是文件不存在的异常
+        # 可以根据需要添加日志记录
+        # print(f"Error filtering pair {pair.file1}:{pair.start1}-{pair.end1} <-> {pair.file2}:{pair.start2}-{pair.end2}: {e}")
+        return None
+
 
 class CloneClassParser:
     """解析包含克隆对的CSV文件，并解析克隆类"""
@@ -16,8 +37,6 @@ class CloneClassParser:
     def __init__(self, filepath, encoding="utf-8"):
         self.filepath = filepath
         self.encoding = encoding
-        # 用于多进程筛选的过滤器，在parse方法中设置
-        self._active_filter = None
 
     def _read_csv(self):
         fields_list = []
@@ -91,10 +110,6 @@ class CloneClassParser:
             clone_classes.append(CloneClass(clone_pairs=pairs))
         return clone_classes
 
-    def _filter_pair(self, pair):
-        """用于多进程筛选的辅助方法"""
-        return pair if self._active_filter.match(pair) else None
-
     def parse(
         self, filter_strategy: Optional[ClonePairFilterStrategy] = None,
         show_progress: bool = True,
@@ -125,23 +140,21 @@ class CloneClassParser:
             if process_count is None:
                 process_count = max(1, multiprocessing.cpu_count() // 2)
             
-            # 设置过滤器供多进程使用
-            self._active_filter = active_filter
-            
-            # 使用多进程筛选
-            with ProcessPoolExecutor(max_workers=process_count) as executor:
+            # 使用ProcessPoolExecutor的initializer参数来初始化工作进程
+            # 这样可以避免在进程间传递包含不可序列化内容的filter_strategy
+            with ProcessPoolExecutor(max_workers=process_count, initializer=_process_initialize, initargs=(active_filter,)) as executor:
                 if show_progress:
                     # 使用tqdm显示进度
                     filtered_results = list(
                         tqdm(
-                            executor.map(self._filter_pair, clone_pairs),
+                            executor.map(_filter_pair_in_process, clone_pairs),
                             total=len(clone_pairs),
                             desc="筛选克隆对",
                             unit="对"
                         )
                     )
                 else:
-                    filtered_results = list(executor.map(self._filter_pair, clone_pairs))
+                    filtered_results = list(executor.map(_filter_pair_in_process, clone_pairs))
                 
                 # 过滤掉None值
                 filtered_pairs = [pair for pair in filtered_results if pair is not None]

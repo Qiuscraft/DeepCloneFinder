@@ -1,11 +1,36 @@
 import os
 import multiprocessing
+import os
 from .detect_encoding import detect_encoding
 from tqdm import tqdm
 
 
+def _process_file(file_info):
+    """
+    处理单个文件的独立函数，用于多进程
+    
+    :param file_info: 包含root和file_name的元组
+    :return: 绝对路径和文件内容的元组，如果出错则返回None
+    """
+    root, file_name = file_info
+    file_path = os.path.join(root, file_name)
+    try:
+        # 检测文件编码
+        encoding = detect_encoding(file_path)
+        # 使用检测到的编码打开文件
+        with open(file_path, 'r', encoding=encoding) as f:
+            content = f.read()
+            # 使用绝对路径作为键
+            abs_path = os.path.abspath(file_path)
+            return abs_path, content
+    except Exception as e:
+        # 处理可能的异常，例如文件权限问题、编码错误等
+        print(f"Error loading file {file_path}: {e}")
+        return None
+
+
 class FileCache:
-    def __init__(self, directory_path, show_progress=True, use_multiprocess=True, max_workers=None):
+    def __init__(self, directory_path, show_progress=True, use_multiprocess=True, max_workers=None, use_shared_memory=True):
         """
         初始化FileCache对象，读取指定目录下的所有文件到内存
         
@@ -13,33 +38,19 @@ class FileCache:
         :param show_progress: 是否显示加载进度条
         :param use_multiprocess: 是否使用多进程加速
         :param max_workers: 最大进程数，默认为CPU核心数的一半
+        :param use_shared_memory: 是否使用可共享的内存，用于多进程环境
         """
         self.directory_path = directory_path
-        self.cache = {}  # 使用字典存储文件路径和内容的映射
-        self._load_files(show_progress, use_multiprocess, max_workers)
-    
-    def _process_file(self, file_info):
-        """
-        处理单个文件的函数，用于多进程
+        self.use_shared_memory = use_shared_memory
         
-        :param file_info: 包含root和file_name的元组
-        :return: 相对路径和文件内容的元组，如果出错则返回None
-        """
-        root, file_name = file_info
-        file_path = os.path.join(root, file_name)
-        try:
-            # 检测文件编码
-            encoding = detect_encoding(file_path)
-            # 使用检测到的编码打开文件
-            with open(file_path, 'r', encoding=encoding) as f:
-                content = f.read()
-                # 使用绝对路径作为键
-                abs_path = os.path.abspath(file_path)
-                return abs_path, content
-        except Exception as e:
-            # 处理可能的异常，例如文件权限问题、编码错误等
-            print(f"Error loading file {file_path}: {e}")
-            return None
+        # 使用可共享的字典或普通字典
+        if self.use_shared_memory:
+            self.manager = multiprocessing.Manager()
+            self.cache = self.manager.dict()  # 使用Manager创建可在多进程间共享的字典
+        else:
+            self.cache = {}  # 普通字典
+        
+        self._load_files(show_progress, use_multiprocess, max_workers)
 
     def _load_files(self, show_progress=True, use_multiprocess=True, max_workers=None):
         """
@@ -85,13 +96,13 @@ class FileCache:
                 # 使用tqdm显示进度
                 if show_progress:
                     results = list(tqdm(
-                        pool.imap(self._process_file, all_files),
+                        pool.imap(_process_file, all_files),
                         total=len(all_files),
                         desc=f"Loading files with {max_workers} processes",
                         unit="file"
                     ))
                 else:
-                    results = pool.map(self._process_file, all_files)
+                    results = pool.map(_process_file, all_files)
                 
                 # 处理结果
                 for result in results:
