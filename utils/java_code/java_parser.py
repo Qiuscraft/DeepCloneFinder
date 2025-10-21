@@ -1,25 +1,31 @@
 import os
-from typing import List
+from typing import List, Optional
 
 import javalang
 
 from utils.file.detect_encoding import detect_encoding
+from utils.file.file_cache import FileCache
 from utils.java_code.function_info import FunctionInfo
 
 
 class JavaParser:
     """Parse a Java source file and extract method information."""
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, file_cache: Optional[FileCache] = None):
         self.file_path = file_path
         self.filename = os.path.basename(file_path)
         self.subdirectory = os.path.basename(os.path.dirname(file_path))
-        self.source_code = self._read_source_code()
+        self.source_code = self._read_source_code(file_cache)
         self.lines = self.source_code.splitlines(True)
         self.tokens = list(javalang.tokenizer.tokenize(self.source_code))
         self.tree = self._parse_source_code()
 
-    def _read_source_code(self) -> str:
+    def _read_source_code(self, file_cache: Optional[FileCache]) -> str:
+        # 如果提供了文件缓存，尝试从缓存中获取文件内容
+        if file_cache and file_cache.has_file(self.file_path):
+            return file_cache.get_file(self.file_path)
+        
+        # 否则，从文件系统读取文件内容（原有逻辑）
         with open(self.file_path, "r", encoding=detect_encoding(self.file_path)) as f:
             return f.read()
 
