@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 from typing import Callable, Iterable, List
 
+from utils.java_code.function_validator import is_java_function
+
 from .clone_pair import ClonePair
 
 
@@ -64,6 +66,12 @@ class AllowAllClonePairFilter(ClonePairFilterStrategy):
 
     def match(self, pair: ClonePair) -> bool:
         return True
+
+
+class OnlyAllowJavaFunctionClonePairFilter(ClonePairFilterStrategy):
+    def match(self, pair: ClonePair) -> bool:
+        snippet1, snippet2 = pair.get_code_snippets()
+        return is_java_function(snippet1) and is_java_function(snippet2)
 
 
 class CallableClonePairFilterStrategy(ClonePairFilterStrategy):
