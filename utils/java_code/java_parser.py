@@ -11,16 +11,20 @@ from utils.java_code.function_info import FunctionInfo
 class JavaParser:
     """Parse a Java source file and extract method information."""
 
-    def __init__(self, file_path: str, file_cache: Optional[FileCache] = None):
+    def __init__(self, file_path: str, file_cache: Optional[FileCache] = None, file_content: Optional[str] = None):
         self.file_path = file_path
         self.filename = os.path.basename(file_path)
         self.subdirectory = os.path.basename(os.path.dirname(file_path))
-        self.source_code = self._read_source_code(file_cache)
+        self.source_code = self._read_source_code(file_cache, file_content)
         self.lines = self.source_code.splitlines(True)
         self.tokens = list(javalang.tokenizer.tokenize(self.source_code))
         self.tree = self._parse_source_code()
 
-    def _read_source_code(self, file_cache: Optional[FileCache]) -> str:
+    def _read_source_code(self, file_cache: Optional[FileCache], file_content: Optional[str]) -> str:
+        # 优先使用直接提供的文件内容
+        if file_content is not None:
+            return file_content
+        
         # 如果提供了文件缓存，尝试从缓存中获取文件内容
         if file_cache and file_cache.has_file(self.file_path):
             return file_cache.get_file(self.file_path)
