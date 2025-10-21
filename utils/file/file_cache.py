@@ -1,11 +1,12 @@
 import os
 import multiprocessing
-import os
+import pickle
+import hashlib
 from .detect_encoding import detect_encoding
 from tqdm import tqdm
 
 
-def _process_file(file_info):
+def _process_file(file_info, encoding='utf-8'):
     """
     处理单个文件的独立函数，用于多进程
     
@@ -15,8 +16,6 @@ def _process_file(file_info):
     root, file_name = file_info
     file_path = os.path.join(root, file_name)
     try:
-        # 检测文件编码
-        encoding = detect_encoding(file_path)
         # 使用检测到的编码打开文件
         with open(file_path, 'r', encoding=encoding) as f:
             content = f.read()
@@ -30,36 +29,22 @@ def _process_file(file_info):
 
 
 class FileCache:
-    def __init__(self, directory_path, show_progress=True, use_multiprocess=True, max_workers=None, use_shared_memory=True):
-        """
-        初始化FileCache对象，读取指定目录下的所有文件到内存
-        
-        :param directory_path: 要缓存的目录路径
-        :param show_progress: 是否显示加载进度条
-        :param use_multiprocess: 是否使用多进程加速
-        :param max_workers: 最大进程数，默认为CPU核心数的一半
-        :param use_shared_memory: 是否使用可共享的内存，用于多进程环境
-        """
+    def __init__(self, directory_path, show_progress=True, workers=None, disk_cache=True):
+        if not workers:
+            workers = (multiprocessing.cpu_count() // 2) or 1
+            
         self.directory_path = directory_path
-        self.use_shared_memory = use_shared_memory
+        self.manager = multiprocessing.Manager()
+        self.cache = self.manager.dict()
         
-        # 使用可共享的字典或普通字典
-        if self.use_shared_memory:
-            self.manager = multiprocessing.Manager()
-            self.cache = self.manager.dict()  # 使用Manager创建可在多进程间共享的字典
+        if disk_cache:
+            if not self._init_from_disk_cache():
+                self._init_from_directory(show_progress, workers)
+                self._save_to_disk_cache()
         else:
-            self.cache = {}  # 普通字典
-        
-        self._load_files(show_progress, use_multiprocess, max_workers)
+            self._init_from_directory(show_progress, workers)
 
-    def _load_files(self, show_progress=True, use_multiprocess=True, max_workers=None):
-        """
-        加载目录下的所有文件到内存
-        
-        :param show_progress: 是否显示加载进度条
-        :param use_multiprocess: 是否使用多进程加速
-        :param max_workers: 最大进程数，默认为CPU核心数的一半
-        """
+    def _init_from_directory(self, show_progress: bool, workers: int):
         if not os.path.exists(self.directory_path):
             raise FileNotFoundError(f"Directory not found: {self.directory_path}")
         
@@ -69,46 +54,24 @@ class FileCache:
             for file_name in files:
                 all_files.append((root, file_name))
         
-        # 使用单进程加载
-        if not use_multiprocess or len(all_files) <= 1:
-            # 使用tqdm创建进度条
-            file_iterator = all_files
+        # 创建进程池
+        with multiprocessing.Pool(processes=workers) as pool:
+            # 使用tqdm显示进度
             if show_progress:
-                file_iterator = tqdm(all_files, desc="Loading files", unit="file")
+                results = list(tqdm(
+                    pool.imap(_process_file, all_files),
+                    total=len(all_files),
+                    desc=f"Loading files with {workers} processes",
+                    unit="file"
+                ))
+            else:
+                results = pool.map(_process_file, all_files)
             
-            for root, file_name in file_iterator:
-                result = self._process_file((root, file_name))
+            # 处理结果
+            for result in results:
                 if result:
                     rel_path, content = result
                     self.cache[rel_path] = content
-        else:
-            # 使用多进程加载
-            # 确定进程数
-            if max_workers is None:
-                # 默认使用CPU核心数的一半
-                max_workers = max(1, multiprocessing.cpu_count() // 2)
-            
-            # 调整进程数，避免进程数超过文件数
-            max_workers = min(max_workers, len(all_files))
-            
-            # 创建进程池
-            with multiprocessing.Pool(processes=max_workers) as pool:
-                # 使用tqdm显示进度
-                if show_progress:
-                    results = list(tqdm(
-                        pool.imap(_process_file, all_files),
-                        total=len(all_files),
-                        desc=f"Loading files with {max_workers} processes",
-                        unit="file"
-                    ))
-                else:
-                    results = pool.map(_process_file, all_files)
-                
-                # 处理结果
-                for result in results:
-                    if result:
-                        rel_path, content = result
-                        self.cache[rel_path] = content
     
     def get_file(self, file_path):
         """
@@ -133,19 +96,70 @@ class FileCache:
         """
         return file_path in self.cache
     
-    def clear_cache(self):
+    def _get_cache_file_path(self):
         """
-        清空缓存
-        """
-        self.cache.clear()
-    
-    def reload_cache(self, show_progress=False, use_multiprocess=False, max_workers=None):
-        """
-        重新加载缓存
+        获取缓存文件的路径
         
-        :param show_progress: 是否显示加载进度条
-        :param use_multiprocess: 是否使用多进程加速
-        :param max_workers: 最大进程数，默认为CPU核心数的一半
+        :return: 缓存文件的绝对路径
         """
-        self.cache.clear()
-        self._load_files(show_progress, use_multiprocess, max_workers)
+        
+        # 计算目录路径和修改时间的组合哈希值
+        hash_input = str(os.path.getmtime(self.directory_path))
+        directory_hash = hashlib.md5(hash_input.encode()).hexdigest()
+        
+        # 构建缓存目录路径 - 自动检测当前运行文件所在目录作为项目根目录
+        import sys
+        
+        # 获取当前正在运行的主脚本路径
+        # sys.argv[0] 是当前执行的Python脚本的路径
+        if hasattr(sys, 'frozen'):  # 检查是否是打包后的可执行文件
+            # 如果是打包后的程序，获取可执行文件所在目录
+            main_script_path = os.path.dirname(os.path.abspath(sys.executable))
+        else:
+            # 正常Python脚本执行模式
+            main_script_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+            
+        # 将主脚本所在目录作为项目根目录
+        project_root = main_script_path
+        
+        # 也可以选择验证是否存在关键文件来确认这是项目根目录
+        # 例如检查是否存在 config.py 或者其他根目录下的标志性文件
+        # if not os.path.exists(os.path.join(project_root, 'config.py')):
+        #     # 如果找不到标志性文件，回退到基于当前文件位置的方法
+        #     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+        
+        cache_dir = os.path.join(project_root, 'cache', self.directory_path.strip('/').replace('/', '_'))
+        # 确保缓存目录存在
+        os.makedirs(cache_dir, exist_ok=True)
+        # 返回缓存文件路径
+        return os.path.join(cache_dir, f'{directory_hash}.pkl')
+        
+    def _init_from_disk_cache(self):
+        """
+        从磁盘加载缓存，确保多进程环境下的正常共享
+        
+        :return: 加载成功返回True，否则返回False
+        """
+        try:
+            cache_file = self._get_cache_file_path()
+            if os.path.exists(cache_file):
+                with open(cache_file, 'rb') as f:
+                    cache_data = pickle.load(f)
+                    for key, value in cache_data.items():
+                        self.cache[key] = value
+                return True
+        except Exception as e:
+            print(f"Error loading cache from disk: {e}")
+        return False
+        
+    def _save_to_disk_cache(self):
+        """
+        保存缓存到磁盘
+        """
+        try:
+            cache_file = self._get_cache_file_path()
+            cache_data = dict(self.cache)
+            with open(cache_file, 'wb') as f:
+                pickle.dump(cache_data, f)
+        except Exception as e:
+            print(f"Error saving cache to disk: {e}")
