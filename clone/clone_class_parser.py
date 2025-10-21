@@ -99,8 +99,12 @@ class CloneClassParser:
             pair = self._parse_clone_pair(fields)
             clone_pairs.append(pair)
         active_filter = filter_strategy or AllowAllClonePairFilter()
-        clone_pairs = [pair for pair in clone_pairs if active_filter.match(pair)]
-        clone_classes = self._parse_clone_class(clone_pairs)
+        filtered_pairs = []
+        items = tqdm(clone_pairs, desc="筛选克隆对", unit="对") if show_progress else clone_pairs
+        for pair in items:
+            if active_filter.match(pair):
+                filtered_pairs.append(pair)
+        clone_classes = self._parse_clone_class(filtered_pairs)
         return clone_classes
 
 

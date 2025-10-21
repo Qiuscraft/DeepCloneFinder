@@ -5,6 +5,7 @@ from enum import Enum, auto
 from typing import Callable, Iterable, List
 
 from utils.java_code.function_validator import is_java_function
+from utils.file.file_cache import FileCache
 
 from .clone_pair import ClonePair
 
@@ -69,8 +70,16 @@ class AllowAllClonePairFilter(ClonePairFilterStrategy):
 
 
 class OnlyAllowJavaFunctionClonePairFilter(ClonePairFilterStrategy):
+    def __init__(self, file_cache: FileCache = None) -> None:
+        """初始化过滤策略。
+        
+        Args:
+            file_cache: 可选的文件缓存对象，用于加速文件读取
+        """
+        self.file_cache = file_cache
+    
     def match(self, pair: ClonePair) -> bool:
-        snippet1, snippet2 = pair.get_code_snippets()
+        snippet1, snippet2 = pair.get_code_snippets(file_cache=self.file_cache)
         return is_java_function(snippet1) and is_java_function(snippet2)
 
 
