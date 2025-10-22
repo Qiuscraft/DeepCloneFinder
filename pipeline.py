@@ -20,7 +20,7 @@ if __name__ == "__main__":
     now = time.time()
 
     print('========== Indexing Functions ==========')
-    # 创建函数索引，便于后续查找
+    
     function_index = {}
     for func in functions:
         key = (func.path, func.start_line, func.end_line)
@@ -51,8 +51,37 @@ if __name__ == "__main__":
 
     print('========== Parsing Clone Classes ==========')
     clone_classes = parser.parse()
-    
+
     print("Total Clone Classes:", len(clone_classes))
 
     print("Clone Classes Parsing Time:", time.time() - now, "s")
+    now = time.time()
+
+    print('========== Indexing Clone Pairs ==========')
+
+    pair_index = {}
+    for pair in parser.clone_pairs:
+        key = (pair.file1, pair.start1, pair.end1)
+        if key not in pair_index:
+            pair_index[key] = []
+        pair_index[key].append(pair)
+
+        key = (pair.file2, pair.start2, pair.end2)
+        if key not in pair_index:
+            pair_index[key] = []
+        pair_index[key].append(pair)
+
+    print("Clone Pairs Indexing Time:", time.time() - now, "s")
+    now = time.time()
+
+    print("========== Filtering Functions ==========")
+
+    valid_functions = []
+    for func in functions:
+        key = (func.path, func.start_line, func.end_line)
+        if (key not in pair_index):
+            valid_functions.append(func)
+
+    print("Total Valid Functions:", len(valid_functions))
+    print("Functions Filtering Time:", time.time() - now, "s")
     now = time.time()
