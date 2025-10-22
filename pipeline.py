@@ -1,3 +1,4 @@
+import os
 import time
 
 from clone.clone_class_parser import CloneClassParser
@@ -15,6 +16,7 @@ if __name__ == "__main__":
     now = time.time()
 
     print('========== Extracting All Functions ==========')
+    
     if os.path.exists("all_functions.pkl"):
         functions = read_functions_from_disk("all_functions.pkl")
     else:
