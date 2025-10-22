@@ -16,12 +16,12 @@ if __name__ == "__main__":
     now = time.time()
 
     print('========== Extracting All Functions ==========')
-    
-    if os.path.exists("all_functions.pkl"):
-        functions = read_functions_from_disk("all_functions.pkl")
+
+    if os.path.exists("functions.pkl"):
+        functions = read_functions_from_disk("functions.pkl")
     else:
         functions = extract_functions_from_directory(config.dataset_path, use_multiprocessing=use_multiprocessing, max_workers=workers)
-        write_functions_to_disk(functions, "all_functions.pkl")
+        write_functions_to_disk(functions, "functions.pkl")
 
     print("Functions Extracting Time:", time.time() - now, "s")
     now = time.time()
