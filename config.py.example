@@ -1,3 +1,4 @@
 dataset_path = r'/root/bcb_reduced' # 数据集路径
 use_multiprocessing = True # 是否开启多进程
 workers = 18 # 进程数
+zhipuai_api_key="" # 智谱AI API Key
