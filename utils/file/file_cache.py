@@ -1,6 +1,5 @@
 import os
 import multiprocessing
-from .detect_encoding import detect_encoding
 from tqdm import tqdm
 
 
@@ -29,8 +28,7 @@ def _process_file(file_info, encoding='utf-8'):
 class FileCache:
     def __init__(self, directory_path, show_progress=True, use_multiprocessing=False, workers=1):
         self.directory_path = directory_path
-        self.manager = multiprocessing.Manager()
-        self.cache = self.manager.dict()
+        self.cache = {}
         
         self._init_from_directory(show_progress, use_multiprocessing, workers)
 
