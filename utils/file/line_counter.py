@@ -1,8 +1,6 @@
 import os
 import sys
 
-from utils.file.detect_encoding import detect_encoding
-
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -13,8 +11,7 @@ from multiprocessing import Pool, cpu_count
 def count_lines_in_file(file_path):
     """Counts the number of lines in a single file."""
     try:
-        encoding = detect_encoding(file_path)
-        with open(file_path, 'r', encoding=encoding, errors='ignore') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             return len(f.readlines())
     except Exception as e:
         print(f"Error reading file {file_path}: {e}")

@@ -1,8 +1,6 @@
-import os
 import difflib
 from dataclasses import dataclass
 from .clone_type import CloneType
-from utils.file.detect_encoding import detect_encoding
 from utils.file.file_cache import FileCache
 
 
@@ -67,8 +65,7 @@ class ClonePair:
                 raise FileNotFoundError(error_msg)
         else:
             # 原有的文件读取逻辑
-            encoding = detect_encoding(file_path)
-            with open(file_path, 'r', encoding=encoding) as f:
+            with open(file_path, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
         
         # 确保行号在有效范围内
