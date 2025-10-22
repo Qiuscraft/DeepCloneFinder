@@ -4,6 +4,7 @@ from clone.clone_class_parser import CloneClassParser
 from clone.pair_filter_strategy import OnlyAllowJavaFunctionClonePairFilter
 import config
 from get_all_functions import extract_functions_from_directory
+from utils.file.file_io import read_functions_from_disk, write_functions_to_disk
 
 use_multiprocessing = config.use_multiprocessing
 workers = config.workers
@@ -14,7 +15,11 @@ if __name__ == "__main__":
     now = time.time()
 
     print('========== Extracting All Functions ==========')
-    functions = extract_functions_from_directory(config.dataset_path, use_multiprocessing=use_multiprocessing, max_workers=workers)
+    if os.path.exists("all_functions.pkl"):
+        functions = read_functions_from_disk("all_functions.pkl")
+    else:
+        functions = extract_functions_from_directory(config.dataset_path, use_multiprocessing=use_multiprocessing, max_workers=workers)
+        write_functions_to_disk(functions, "all_functions.pkl")
 
     print("Functions Extracting Time:", time.time() - now, "s")
     now = time.time()
