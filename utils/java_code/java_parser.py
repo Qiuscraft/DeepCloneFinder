@@ -3,7 +3,6 @@ from typing import List, Optional
 
 import javalang
 
-from utils.file.detect_encoding import detect_encoding
 from utils.file.file_cache import FileCache
 from utils.java_code.function_info import FunctionInfo
 
@@ -30,7 +29,7 @@ class JavaParser:
             return file_cache.get_file(self.file_path)
         
         # 否则，从文件系统读取文件内容（原有逻辑）
-        with open(self.file_path, "r", encoding=detect_encoding(self.file_path)) as f:
+        with open(self.file_path, "r", encoding="utf-8") as f:
             return f.read()
 
     def _parse_source_code(self):
