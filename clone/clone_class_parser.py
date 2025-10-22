@@ -1,8 +1,11 @@
 import csv
 import os
+from tqdm import tqdm      
+
 
 from clone.clone_class import CloneClass
 from clone.clone_pair import ClonePair
+from clone.pair_filter_strategy import ClonePairFilterStrategy
 
 
 class CloneClassParser:
@@ -95,3 +98,18 @@ class CloneClassParser:
         clone_classes = self._parse_clone_class(self.clone_pairs)
         return clone_classes
 
+
+    def apply_filter_strategy(self, filter_strategy: ClonePairFilterStrategy, show_progress=False):
+        filtered_pairs = []
+
+        if show_progress:
+            with tqdm(self.clone_pairs, desc="Filtering Clone Pairs", unit="pair") as iterator:
+                for pair in iterator:
+                    if filter_strategy.match(pair):
+                        filtered_pairs.append(pair)
+        else:
+            for pair in self.clone_pairs:
+                if filter_strategy.match(pair):
+                    filtered_pairs.append(pair)
+
+        self.clone_pairs = filtered_pairs

@@ -70,17 +70,11 @@ class AllowAllClonePairFilter(ClonePairFilterStrategy):
 
 
 class OnlyAllowJavaFunctionClonePairFilter(ClonePairFilterStrategy):
-    def __init__(self, file_cache: FileCache = None) -> None:
-        """初始化过滤策略。
-        
-        Args:
-            file_cache: 可选的文件缓存对象，用于加速文件读取
-        """
-        self.file_cache = file_cache
+    def __init__(self, function_index) -> None:
+        self.function_index = function_index
     
     def match(self, pair: ClonePair) -> bool:
-        snippet1, snippet2 = pair.get_code_snippets(file_cache=self.file_cache)
-        return is_java_function(snippet1) and is_java_function(snippet2)
+        return (pair.file1, pair.start1, pair.end1) in self.function_index and (pair.file2, pair.start2, pair.end2) in self.function_index
 
 
 class CallableClonePairFilterStrategy(ClonePairFilterStrategy):
