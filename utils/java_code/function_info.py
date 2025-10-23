@@ -12,3 +12,4 @@ class FunctionInfo:
     subdirectory: str
     filename: str
     path: str  # 绝对路径
+    embedding: str | None = None  # 用于存储函数的嵌入表示

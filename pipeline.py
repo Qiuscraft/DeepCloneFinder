@@ -13,17 +13,25 @@ use_multiprocessing = config.use_multiprocessing
 workers = config.workers
 
 
+def extract_all_functions(path=None, pkl_path="functions.pkl"):
+    if path is None:
+        path = config.dataset_path
+
+    if os.path.exists(pkl_path):
+        functions = read_functions_from_disk(pkl_path)
+
+    else:
+        functions = extract_functions_from_directory(path, use_multiprocessing=use_multiprocessing, max_workers=workers)
+        write_functions_to_disk(functions, pkl_path)
+    return functions
+
 
 if __name__ == "__main__":
     now = time.time()
 
     print('========== Extracting All Functions ==========')
 
-    if os.path.exists("functions.pkl"):
-        functions = read_functions_from_disk("functions.pkl")
-    else:
-        functions = extract_functions_from_directory(config.dataset_path, use_multiprocessing=use_multiprocessing, max_workers=workers)
-        write_functions_to_disk(functions, "functions.pkl")
+    functions = extract_all_functions()
 
     print("Functions Extracting Time:", time.time() - now, "s")
     now = time.time()
